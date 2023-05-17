@@ -16,6 +16,9 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options => options.SignIn.R
     .AddEntityFrameworkStores<ApplicationDbContext>();
 builder.Services.AddControllersWithViews();
 
+// Add Repository scopes.
+builder.Services.AddScoped<IRepository<Project>, ProjectsRepository>();
+
 builder.Services.AddScoped<IRepository<Ticket>, TicketRepository>();
 
 var app = builder.Build();
