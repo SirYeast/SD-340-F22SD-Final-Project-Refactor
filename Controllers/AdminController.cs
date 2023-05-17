@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using SD_340_W22SD_Final_Project_Group6.BLL;
 using SD_340_W22SD_Final_Project_Group6.Data;
 using SD_340_W22SD_Final_Project_Group6.Models;
 using SD_340_W22SD_Final_Project_Group6.Models.ViewModel;
@@ -11,27 +12,16 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
     [Authorize(Roles = "Admin")]
     public class AdminController : Controller
     {
-        private readonly ApplicationDbContext _context;
-        private readonly UserManager<ApplicationUser> _users;
+        private readonly AdminBusinessLogic _adminBusinessLogic;
 
-        public AdminController(ApplicationDbContext context, UserManager<ApplicationUser> users)
+        public AdminController(AdminBusinessLogic adminBusinessLogic)
         {
-            _context = context;
-            _users = users;
+            _adminBusinessLogic = adminBusinessLogic;
         }
         public async Task<IActionResult> Index()
         {
-            ProjectManagersAndDevelopersViewModels vm = new ProjectManagersAndDevelopersViewModels();
+            ProjectManagersAndDevelopersViewModels vm = await _adminBusinessLogic.ProjectManagersAndDevelopersViewModels();
 
-            List<ApplicationUser> pmUsers = (List<ApplicationUser>)await _users.GetUsersInRoleAsync("ProjectManager");
-            List<ApplicationUser> devUsers = (List<ApplicationUser>)await _users.GetUsersInRoleAsync("Developer");
-            List<ApplicationUser> allUsers = _context.Users.ToList();
-
-
-
-            vm.pms = pmUsers;
-            vm.devs = devUsers;
-            vm.allUsers = allUsers;
             return View(vm);
         }
 
