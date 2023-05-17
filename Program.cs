@@ -19,6 +19,8 @@ builder.Services.AddControllersWithViews();
 // Add Repository scopes.
 builder.Services.AddScoped<IRepository<Project>, ProjectsRepository>();
 
+builder.Services.AddScoped<IRepository<Ticket>, TicketRepository>();
+
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
