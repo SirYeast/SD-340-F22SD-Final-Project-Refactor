@@ -32,7 +32,7 @@ namespace SD_340_W22SD_Final_Project_Group6.Data
 
         public ICollection<Project> GetAll()
         {
-            return _context.Projects.ToList<Project>();
+            return _context.Projects.ToList();
         }
 
         public void Update(Project entity)
