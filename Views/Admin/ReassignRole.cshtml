@@ -3,8 +3,8 @@
 <form asp-action="ReassignRole" asp-controller="Admin">
     <div class="form-group">
 	<label class="control-label">Choose a User</label>
-	<select name="userId" asp-items=@ViewBag.Users></select>
-	<span class="text-danger"></span>
+		<select name="userId" asp-items="@(new SelectList(Model, "Id", "UserName"))"></select>
+		<span class="text-danger"></span>
 </div>
 
 <div  class="form-group">

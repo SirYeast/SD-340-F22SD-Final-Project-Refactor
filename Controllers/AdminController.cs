@@ -27,28 +27,30 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
 
         public async Task<IActionResult> ReassignRoleAsync()
         {
-            List<SelectListItem> allUsers = await _adminBusinessLogic.ReassignRoleAsync();
-
-            ViewBag.Users = allUsers;
-
+            List<ApplicationUser> allUsers = await _adminBusinessLogic.GetAllUsersAsync(); 
             return View(allUsers);
         }
+
 
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ReassignRole(string role, string userId)
         {
-
-            ApplicationUser user = _users.Users.First(u => u.Id == userId);
-            ICollection<string> roleUser = await _users.GetRolesAsync(user);
+            if (userId == null)
+            {
+                ViewBag.ErrorMessage = "User ID is required.";
+                return View("Error");
+            }
+            ApplicationUser user = await _adminBusinessLogic.GetUserByIdAsync(userId);
+            ICollection<string> roleUser = (ICollection<string>)await _adminBusinessLogic.GetRolesAsync(role);
             if (roleUser.Count == 0)
             {
-                await _users.AddToRoleAsync(user, role);
+                await _adminBusinessLogic.AddToRoleAsync(user, role);
                 return RedirectToAction("Index", "Admin", new { area = "" });
             } else
             {
-                await _users.RemoveFromRoleAsync(user, roleUser.First());
-                await _users.AddToRoleAsync(user, role);
+                await _adminBusinessLogic.RemoveFromRoleAsync(user, roleUser.First());
+                await _adminBusinessLogic.AddToRoleAsync(user, role);
                 return RedirectToAction("Index", "Admin", new { area = "" });
             }
         }
