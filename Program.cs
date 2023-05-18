@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using SD_340_W22SD_Final_Project_Group6.BLL;
 using SD_340_W22SD_Final_Project_Group6.Data;
 using SD_340_W22SD_Final_Project_Group6.Models;
 
@@ -18,7 +19,7 @@ builder.Services.AddControllersWithViews();
 
 // Add Repository scopes.
 builder.Services.AddScoped<IRepository<Project>, ProjectsRepository>();
-
+builder.Services.AddScoped<AdminBusinessLogic>();
 builder.Services.AddScoped<IRepository<Ticket>, TicketRepository>();
 
 var app = builder.Build();
