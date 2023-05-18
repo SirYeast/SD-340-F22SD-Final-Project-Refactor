@@ -38,5 +38,10 @@ namespace SD_340_W22SD_Final_Project_Group6.Data
             _context.Tickets.Remove(entity);
             _context.SaveChanges();
         }
+
+        public bool Exists(int id)
+        {
+            return _context.Tickets.Any(t => t.Id == id);
+        }
     }
 }
