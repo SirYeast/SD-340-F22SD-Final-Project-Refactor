@@ -1,11 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using SD_340_W22SD_Final_Project_Group6.BLL;
 using SD_340_W22SD_Final_Project_Group6.Data;
 using SD_340_W22SD_Final_Project_Group6.Models;
 using SD_340_W22SD_Final_Project_Group6.Models.ViewModel;
@@ -15,113 +12,149 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
     [Authorize]
     public class TicketsController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        private readonly ApplicationDbContext _context; // to be removed
+        private readonly TicketBusinessLogic _ticketBusinessLogic;
 
-        public TicketsController(ApplicationDbContext context)
+        public TicketsController(
+            ApplicationDbContext context,
+            UserManager<ApplicationUser> userManager,
+            IRepository<Ticket> ticketRepo,
+            IRepository<Project> projectRepo,
+            IRepository<Comment> commentRepo,
+            IRepository<UserProject> userProjectRepo,
+            IRepository<TicketWatcher> ticketWatcherRepo)
         {
             _context = context;
+            _ticketBusinessLogic = new(userManager, ticketRepo, projectRepo, commentRepo, userProjectRepo, ticketWatcherRepo);
         }
 
         // GET: Tickets
         public async Task<IActionResult> Index()
         {
-              return _context.Tickets != null ? 
-                          View(await _context.Tickets.Include(t => t.Project).Include(t => t.Owner).ToListAsync()) :
-                          Problem("Entity set 'ApplicationDbContext.Tickets'  is null.");
+            return View(await _ticketBusinessLogic.GetAllTicketsAsync());
         }
 
         // GET: Tickets/Details/5
         public async Task<IActionResult> Details(int? id)
         {
-            if (id == null || _context.Tickets == null)
+            try
             {
-                return NotFound();
+                return View(await _ticketBusinessLogic.GetTicketDetails(id));
             }
-
-            var ticket = await _context.Tickets.Include(t => t.Project).Include(t => t.TicketWatchers).ThenInclude(tw => tw.Watcher).Include(u => u.Owner).Include(t => t.Comments).ThenInclude(c => c.CreatedBy)
-                .FirstOrDefaultAsync(m => m.Id == id);
-            List<SelectListItem> currUsers = new List<SelectListItem>();
-            ticket.Project.AssignedTo.ToList().ForEach(t =>
+            catch (Exception ex)
             {
-                currUsers.Add(new SelectListItem(t.ApplicationUser.UserName, t.ApplicationUser.Id.ToString()));
-            });
-            ViewBag.Users = currUsers;
-
-            if (ticket == null)
-            {
-                return NotFound();
+                return Problem(ex.Message);
             }
-
-            return View(ticket);
         }
 
         // GET: Tickets/Create
         [Authorize(Roles = "ProjectManager")]
-        public IActionResult Create(int projId)
+        public IActionResult Create(int projId) // will be moved to ProjectBusinessLogic
         {
             Project currProject = _context.Projects.Include(p => p.AssignedTo).ThenInclude(at => at.ApplicationUser).FirstOrDefault(p => p.Id == projId);
 
-            List<SelectListItem> currUsers = new List<SelectListItem>();
-            currProject.AssignedTo.ToList().ForEach(t =>
+            return View(new ItemWithUsersViewModel<Ticket>(new Ticket()
             {
-                currUsers.Add(new SelectListItem(t.ApplicationUser.UserName, t.ApplicationUser.Id.ToString()));
-            });
-
-            ViewBag.Projects = currProject;
-            ViewBag.Users = currUsers;
-
-            return View();
-
+                ProjectId = projId,
+                Project = currProject,
+            }, currProject.AssignedTo.Select(u => u.ApplicationUser)));
         }
 
-        // POST: Tickets/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize(Roles = "ProjectManager")]
-        public async Task<IActionResult> Create([Bind("Id,Title,Body,RequiredHours,TicketPriority")] Ticket ticket, int projId, string userId)
+        public async Task<IActionResult> Create(ItemWithUsersViewModel<Ticket> vm)
         {
             if (ModelState.IsValid)
-            { 
-                ticket.Project = await _context.Projects.FirstAsync(p => p.Id == projId);
-                Project currProj = await _context.Projects.FirstOrDefaultAsync(p => p.Id == projId);
-                ApplicationUser owner = _context.Users.FirstOrDefault(u => u.Id == userId);
-                ticket.Owner = owner;
-                _context.Add(ticket);
-                currProj.Tickets.Add(ticket);
-                await _context.SaveChangesAsync();
-                return RedirectToAction("Index","Projects", new { area = ""});
+            {
+                try
+                {
+                    await _ticketBusinessLogic.CreateTicketAsync(vm.Item);
+                    return RedirectToAction("Index", "Projects", new { area = "" });
+                }
+                catch (Exception ex)
+                {
+                    return Problem(ex.Message);
+                }
             }
-            return View(ticket);
+            return View(vm.Item);
         }
 
         // GET: Tickets/Edit/5
         [Authorize(Roles = "ProjectManager")]
         public async Task<IActionResult> Edit(int? id)
         {
-            if (id == null || _context.Tickets == null)
+            try
+            {
+                return View(await _ticketBusinessLogic.GetTicketForEditingAsync(id));
+            }
+            catch (Exception ex)
+            {
+                return Problem(ex.Message);
+            }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "ProjectManager")]
+        public async Task<IActionResult> Edit(int id, ItemWithUsersViewModel<Ticket> vm)
+        {
+            if (ModelState.IsValid)
+            {
+                try
+                {
+                    await _ticketBusinessLogic.EditTicketAsync(id, vm.Item);
+                    return RedirectToAction(nameof(Edit), new { id = vm.Item.Id });
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    if (!_ticketBusinessLogic.TicketExists(vm.Item.Id))
+                    {
+                        return NotFound();
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    return Problem(ex.Message);
+                }
+            }
+            return View(vm.Item);
+        }
+
+        // GET: Tickets/Delete/5
+        [Authorize(Roles = "ProjectManager")]
+        public IActionResult Delete(int? id)
+        {
+            try
+            {
+                return View(_ticketBusinessLogic.GetTicketForDeletion(id));
+            }
+            catch (ArgumentNullException)
             {
                 return NotFound();
             }
-
-            var ticket = await _context.Tickets.Include(t => t.Owner).FirstAsync(t => t.Id == id);
-      
-            if (ticket == null)
+            catch (NullReferenceException)
             {
                 return NotFound();
             }
-
-            List<ApplicationUser> results = _context.Users.Where(u => u != ticket.Owner).ToList();
-
-            List<SelectListItem> currUsers = new List<SelectListItem>();
-            results.ForEach(r =>
+            catch (Exception ex)
             {
-                currUsers.Add(new SelectListItem(r.UserName, r.Id.ToString()));
-            });
-            ViewBag.Users = currUsers;
+                return Problem(ex.Message);
+            }
+        }
 
-            return View(ticket);
+        // POST: Tickets/Delete/5
+        [HttpPost, ActionName("Delete")]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "ProjectManager")]
+        public IActionResult DeleteConfirmed(int id)
+        {
+            _ticketBusinessLogic.DeleteTicket(id);
+            return RedirectToAction("Index", "Projects");
         }
 
         [Authorize(Roles = "ProjectManager")]
@@ -136,46 +169,8 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
             //To be fixed ASAP
             currTicket.Owner = currUser;
             await _context.SaveChangesAsync();
-            
+
             return RedirectToAction("Edit", new { id = ticketId });
-        }
-
-        // POST: Tickets/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        [Authorize(Roles = "ProjectManager")]
-        public async Task<IActionResult> Edit(int id,string userId, [Bind("Id,Title,Body,RequiredHours")] Ticket ticket)
-        {
-            if (id != ticket.Id)
-            {
-                return NotFound();
-            }
-
-            if (ModelState.IsValid)
-            {
-                try
-                {
-                    ApplicationUser currUser = _context.Users.FirstOrDefault(u => u.Id == userId);
-                    ticket.Owner = currUser;
-                    _context.Update(ticket);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!TicketExists(ticket.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
-                return RedirectToAction(nameof(Edit), new {id = ticket.Id});
-            }
-            return View(ticket);
         }
 
         [HttpPost]
@@ -199,7 +194,7 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
 
                     int Id = TaskId;
                     await _context.SaveChangesAsync();
-                    return RedirectToAction("Details", new {Id});
+                    return RedirectToAction("Details", new { Id });
 
                 }
                 catch (Exception ex)
@@ -265,7 +260,7 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
             {
                 try
                 {
-                    
+
                     string userName = User.Identity.Name;
                     ApplicationUser user = _context.Users.First(u => u.UserName == userName);
                     Ticket ticket = _context.Tickets.FirstOrDefault(t => t.Id == id);
@@ -327,53 +322,5 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
             }
             return RedirectToAction("Index");
         }
-
-
-        // GET: Tickets/Delete/5
-        [Authorize(Roles = "ProjectManager")]
-        public async Task<IActionResult> Delete(int? id)
-        {
-            if (id == null || _context.Tickets == null)
-            {
-                return NotFound();
-            }
-
-            var ticket = await _context.Tickets.Include(t => t.Project)
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (ticket == null)
-            {
-                return NotFound();
-            }
-
-            return View(ticket);
-        }
-
-        // POST: Tickets/Delete/5
-        [HttpPost, ActionName("Delete")]
-        [ValidateAntiForgeryToken]
-        [Authorize(Roles = "ProjectManager")]
-        public async Task<IActionResult> DeleteConfirmed(int id, int projId)
-        {
-            if (_context.Tickets == null)
-            {
-                return Problem("Entity set 'ApplicationDbContext.Tickets'  is null.");
-            }
-            var ticket = await _context.Tickets.Include(t => t.Project).FirstAsync(p => p.Id == id);
-            Project currProj = await _context.Projects.FirstAsync(p => p.Id.Equals(projId));
-            if (ticket != null)
-            {
-                currProj.Tickets.Remove(ticket);
-                _context.Tickets.Remove(ticket);
-            }
-            
-            await _context.SaveChangesAsync();
-            return RedirectToAction("Index", "Projects");
-        }
-
-        private bool TicketExists(int id)
-        {
-          return (_context.Tickets?.Any(e => e.Id == id)).GetValueOrDefault();
-        }
     }
 }
-

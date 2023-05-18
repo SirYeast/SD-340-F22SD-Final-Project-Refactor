@@ -1,4 +1,4 @@
-﻿@model SD_340_W22SD_Final_Project_Group6.Models.Ticket
+﻿@model SD_340_W22SD_Final_Project_Group6.Models.ViewModel.ItemWithUsersViewModel<Ticket>
 
 @{
     ViewData["Title"] = "Edit";
@@ -13,42 +13,44 @@
     <div class="col-md-4">
         <form asp-action="Edit">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <input type="hidden" asp-for="Id" />
+            <input type="hidden" asp-for="Item.Id" />
+            <input type="hidden" asp-for="Item.ProjectId" />
+            <input type="hidden" asp-for="Item.TicketPriority" />
+            <input type="hidden" asp-for="Item.Completed" />
             <div class="form-group">
-                <label asp-for="Title" class="control-label"></label>
-                <input asp-for="Title" class="form-control" />
-                <span asp-validation-for="Title" class="text-danger"></span>
+                <label asp-for="Item.Title" class="control-label"></label>
+                <input asp-for="Item.Title" class="form-control" />
+                <span asp-validation-for="Item.Title" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <label asp-for="Body" class="control-label"></label>
-                <input asp-for="Body" class="form-control" />
-                <span asp-validation-for="Body" class="text-danger"></span>
+                <label asp-for="Item.Body" class="control-label"></label>
+                <input asp-for="Item.Body" class="form-control" />
+                <span asp-validation-for="Item.Body" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <label asp-for="RequiredHours" class="control-label"></label>
-                <input asp-for="RequiredHours" class="form-control" />
-                <span asp-validation-for="RequiredHours" class="text-danger"></span>
+                <label asp-for="Item.RequiredHours" class="control-label"></label>
+                <input asp-for="Item.RequiredHours" class="form-control" />
+                <span asp-validation-for="Item.RequiredHours" class="text-danger"></span>
             </div>
             <table class="table">
-    <thead>
-        <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.Owner)
-            </th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td>@Model.Owner</td>
-        </tr>
-    </tbody>
-</table>
-                <div class="form-group">
-                    <input type="hidden" value=@Model.Id name="ticketId" />
-                    <label asp-for="Owner" class="control-label">Select Users:</label>
-                    <select name="userId" asp-for="Owner" asp-items=@ViewBag.Users></select>
-                    <span asp-validation-for="Owner" class="text-danger"></span>
-                </div>
+                <thead>
+                    <tr>
+                        <th>
+                            @Html.DisplayNameFor(model => model.Item.Owner)
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>@Model.Item.Owner</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="form-group">
+                <label asp-for="Item.OwnerId" class="control-label">Select Users:</label>
+                <select asp-for="Item.OwnerId" asp-items="Model.Users"></select>
+                <span asp-validation-for="Item.OwnerId" class="text-danger"></span>
+            </div>
             <div class="form-group">
                 <input type="submit" value="Save" class="btn btn-primary" />
             </div>
@@ -61,5 +63,7 @@
 </div>
 
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
 }
