@@ -1,6 +1,5 @@
 ﻿using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SD_340_W22SD_Final_Project_Group6.Models
 {
@@ -20,10 +19,11 @@ namespace SD_340_W22SD_Final_Project_Group6.Models
         [DisplayName("Required Hours :")]
         public int RequiredHours { get; set; }
 
-        [ForeignKey("ApplicationUser")]
+        public string? OwnerId { get; set; }
         [DisplayName("Owner :")]
         public ApplicationUser? Owner { get; set; }
 
+        public int? ProjectId { get; set; }
         [DisplayName("Project :")]
         public Project? Project { get; set; }
 
