@@ -139,7 +139,7 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
             // geting assined project
             if (rolenames.Contains("Developer"))
             {
-                AssinedProject = SortedProjs.Where(p => p.AssignedTo.Select(projectUser => projectUser.UserId).Contains(user.Id)).ToList();
+                AssinedProject = SortedProjs.Where(p => p.AssignedTo.Select(projectUser => projectUser.ApplicationUserId).Contains(user.Id)).ToList();
             }
             else
             {
@@ -173,7 +173,7 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
             {
                 return NotFound();
             }
-            UserProject currUserProj = await _context.UserProjects.FirstAsync(up => up.ProjectId == projId && up.UserId == id);
+            UserProject currUserProj = await _context.UserProjects.FirstAsync(up => up.ProjectId == projId && up.ApplicationUserId == id);
             _context.UserProjects.Remove(currUserProj);
             await _context.SaveChangesAsync();
 
@@ -214,7 +214,7 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
                     ApplicationUser currUser = _context.Users.FirstOrDefault(u => u.Id == user);
                     UserProject newUserProj = new UserProject();
                     newUserProj.ApplicationUser = currUser;
-                    newUserProj.UserId = currUser.Id;
+                    newUserProj.ApplicationUserId = currUser.Id;
                     newUserProj.Project = project;
                     project.AssignedTo.Add(newUserProj);
                     _context.UserProjects.Add(newUserProj);
@@ -275,7 +275,7 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
                         ApplicationUser currUser = _context.Users.FirstOrDefault(u => u.Id == user);
                         UserProject newUserProj = new UserProject();
                         newUserProj.ApplicationUser = currUser;
-                        newUserProj.UserId = currUser.Id;
+                        newUserProj.ApplicationUserId = currUser.Id;
                         newUserProj.Project = project;
                         project.AssignedTo.Add(newUserProj);
                     });

@@ -19,8 +19,13 @@ builder.Services.AddControllersWithViews();
 
 // Add Repository scopes.
 builder.Services.AddScoped<IRepository<Project>, ProjectsRepository>();
-builder.Services.AddScoped<AdminBusinessLogic>();
 builder.Services.AddScoped<IRepository<Ticket>, TicketRepository>();
+builder.Services.AddScoped<IRepository<Comment>, CommentRepository>();
+builder.Services.AddScoped<IRepository<UserProject>, UserProjectRepository>();
+builder.Services.AddScoped<IRepository<TicketWatcher>, TicketWatcherRepository>();
+
+builder.Services.AddScoped<AdminBusinessLogic>();
+builder.Services.AddScoped<TicketBusinessLogic>();
 
 var app = builder.Build();
 

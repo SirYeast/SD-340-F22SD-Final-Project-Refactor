@@ -25,6 +25,11 @@ namespace SD_340_W22SD_Final_Project_Group6.Data
             _context.SaveChanges();
         }
 
+        public bool Exists(int id)
+        {
+            return _context.Projects.Any(t => t.Id == id);
+        }
+
         public Project? Get(int? Id)
         {
             return _context.Projects.Find(Id);

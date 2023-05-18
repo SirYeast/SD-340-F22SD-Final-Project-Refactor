@@ -8,6 +8,7 @@
         //Read
         T? Get(int? Id);
         ICollection<T> GetAll();
+        bool Exists(int id);
 
         //Update
         void Update(T entity);

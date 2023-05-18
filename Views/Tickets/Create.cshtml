@@ -1,76 +1,68 @@
-﻿@model SD_340_W22SD_Final_Project_Group6.Models.Ticket
+﻿@model SD_340_W22SD_Final_Project_Group6.Models.ViewModel.ItemWithUsersViewModel<Ticket>
 
 
 @{
-	ViewData["Title"] = "Create";
-	Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Create";
+    Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
 <h1>Create</h1>
 
-<h4>Ticket for @ViewBag.Projects.ProjectName</h4>
+<h4>Ticket for @Model.Item.Project.ProjectName</h4>
 <hr />
 <div class="row">
-	<div>
-		<form asp-action="Create" method="post">
-			<div asp-validation-summary="ModelOnly" class="text-danger"></div>
-
-
-			<div class="form-group">
-				<label asp-for="Title" class="control-label"></label>
-				<input asp-for="Title" class="form-control" />
-				<span asp-validation-for="Title" class="text-danger"></span>
-			</div>
-			<div class="form-group">
-				<label asp-for="Body" class="control-label"></label>
-				<textarea asp-for="Body" id="mytextarea" required="required">Enter Text Here</textarea>
-				<span asp-validation-for="Body" class="text-danger"></span>
-			</div>
-			<div class="row">
-				<div class="col-2" style="gap: 1rem; display:flex; flex-direction:column">
-					<div class="form-group">
-						<label asp-for="RequiredHours" class="control-label"></label>
-						<input asp-for="RequiredHours" class="form-control" />
-						<span asp-validation-for="RequiredHours" class="text-danger"></span>
-					</div>
-					<div class="form-group">
-						<label asp-for="Project" class="control-label"></label>
-						<input type="hidden" value="@ViewBag.Projects.Id" name="projId" />
-						<p style="font-weight: bold; display: inline">@ViewBag.Projects.ProjectName</p>
-						<span asp-validation-for="Project" class="text-danger"></span>
-					</div>
-
-
-				</div>
-				<div class="col-8" style="gap: 1rem; display:flex; flex-direction:column">
-					<div class="form-group">
-						<label asp-for="TicketPriority" class="control-label"></label>
-						<select asp-for="TicketPriority" asp-items="Html.GetEnumSelectList<Ticket.Priority>()"></select>
-						<span asp-validation-for="TicketPriority" class="text-danger"></span>
-					</div>
-					<div class="form-group">
-						<label asp-for="Owner" class="control-label"></label>
-						<select name="userId" asp-for="Owner" asp-items=@ViewBag.Users></select>
-						<span asp-validation-for="Owner" class="text-danger"></span>
-					</div>
-				</div>
-			</div>
-
-			<div class="form-group">
-				<input type="submit" value="Create" class="btn" style="background-color: #E4BCB9" />
-			</div>
-
-
-		</form>
-	</div>
+    <div>
+        <form asp-action="Create" method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="form-group">
+                <label asp-for="Item.Title" class="control-label"></label>
+                <input asp-for="Item.Title" class="form-control" />
+                <span asp-validation-for="Item.Title" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Item.Body" class="control-label"></label>
+                <textarea asp-for="Item.Body" id="mytextarea" required="required">Enter Text Here</textarea>
+                <span asp-validation-for="Item.Body" class="text-danger"></span>
+            </div>
+            <div class="row">
+                <div class="col-2" style="gap: 1rem; display:flex; flex-direction:column">
+                    <div class="form-group">
+                        <label asp-for="Item.RequiredHours" class="control-label"></label>
+                        <input asp-for="Item.RequiredHours" class="form-control" />
+                        <span asp-validation-for="Item.RequiredHours" class="text-danger"></span>
+                    </div>
+                    <div class="form-group">
+                        <label asp-for="Item.ProjectId" class="control-label"></label>
+                        <input type="hidden" asp-for="Item.ProjectId" />
+                        <p style="font-weight: bold; display: inline">@Model.Item.Project.ProjectName</p>
+                    </div>
+                </div>
+                <div class="col-8" style="gap: 1rem; display:flex; flex-direction:column">
+                    <div class="form-group">
+                        <label asp-for="Item.TicketPriority" class="control-label"></label>
+                        <select asp-for="Item.TicketPriority" asp-items="Html.GetEnumSelectList<Ticket.Priority>()"></select>
+                        <span asp-validation-for="Item.TicketPriority" class="text-danger"></span>
+                    </div>
+                    <div class="form-group">
+                        <label asp-for="Item.OwnerId" class="control-label"></label>
+                        <select asp-for="Item.OwnerId" asp-items=@Model.Users></select>
+                        <span asp-validation-for="Item.OwnerId" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Create" class="btn" style="background-color: #E4BCB9" />
+            </div>
+        </form>
+    </div>
 </div>
 
 <div>
-	<a asp-action="Index" asp-controller="Projects">Back to List</a>
+    <a asp-action="Index" asp-controller="Projects">Back to List</a>
 </div>
 
 @section Scripts {
-	@{
-		await Html.RenderPartialAsync("_ValidationScriptsPartial");
-	}
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
 	}
