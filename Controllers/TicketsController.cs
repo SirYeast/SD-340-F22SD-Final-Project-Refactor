@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SD_340_W22SD_Final_Project_Group6.BLL;
@@ -17,15 +16,10 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
 
         public TicketsController(
             ApplicationDbContext context,
-            UserManager<ApplicationUser> userManager,
-            IRepository<Ticket> ticketRepo,
-            IRepository<Project> projectRepo,
-            IRepository<Comment> commentRepo,
-            IRepository<UserProject> userProjectRepo,
-            IRepository<TicketWatcher> ticketWatcherRepo)
+            TicketBusinessLogic ticketBusinessLogic)
         {
             _context = context;
-            _ticketBusinessLogic = new(userManager, ticketRepo, projectRepo, commentRepo, userProjectRepo, ticketWatcherRepo);
+            _ticketBusinessLogic = ticketBusinessLogic;
         }
 
         // GET: Tickets
