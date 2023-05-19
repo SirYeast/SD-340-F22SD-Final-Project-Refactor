@@ -1,4 +1,4 @@
-﻿@model SD_340_W22SD_Final_Project_Group6.Models.Project
+﻿@model SD_340_W22SD_Final_Project_Group6.Models.ViewModel.ItemWithUsersViewModel<Project>
 
 @{
     ViewData["Title"] = "Edit";
@@ -13,38 +13,38 @@
     <div class="col-md-4">
         <form asp-action="Edit">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <input type="hidden" asp-for="Id" />
+            <input type="hidden" asp-for="Item.Id" />
             <div class="form-group">
-                <label asp-for="ProjectName" class="control-label"></label>
-                <input asp-for="ProjectName" class="form-control" />
-                <span asp-validation-for="ProjectName" class="text-danger"></span>
+                <label asp-for="Item.ProjectName" class="control-label"></label>
+                <input asp-for="Item.ProjectName" class="form-control" />
+                <span asp-validation-for="Item.ProjectName" class="text-danger"></span>
             </div>
             <table class="table">
     <thead>
         <tr>
             <th>
-                @Html.DisplayNameFor(model => model.AssignedTo)
+                @Html.DisplayNameFor(model => model.Item.AssignedTo)
             </th>
         </tr>
     </thead>
     <tbody>
-@foreach (var item in Model.AssignedTo) {
+@foreach (var item in Model.Item.AssignedTo) {
         <tr>
             <td>
                 @Html.DisplayFor(modelItem => item.ApplicationUser.UserName)
             </td>
             <td>
-                <a asp-action="RemoveAssignedUser" asp-controller="Projects" asp-route-id="@item.ApplicationUser.Id" asp-route-projId="@Model.Id">Remove</a>
+                <a asp-action="RemoveAssignedUser" asp-controller="Projects" asp-route-id="@item.ApplicationUser.Id" asp-route-projId="@Model.Item.Id">Remove</a>
             </td>
         </tr>
 }
     </tbody>
 </table>
                 <div class="form-group">
-                    <input type="hidden" value=@Model.Id name="ticketId" />
-                    <label asp-for="AssignedTo" class="control-label">Select Users:</label>
-                    <select name="userIds" asp-for="AssignedTo" asp-items=@ViewBag.Users></select>
-                    <span asp-validation-for="AssignedTo" class="text-danger"></span>
+                    <input type="hidden" value=@Model.Item.Id name="ticketId" />
+                    <label asp-for="Item.AssignedTo" class="control-label">Select Users:</label>
+                    <select name="userIds" asp-for="Item.AssignedTo" asp-items=@Model.Users></select>
+                    <span asp-validation-for="Item.AssignedTo" class="text-danger"></span>
                 </div>
             <div class="form-group">
                 <input type="submit" value="Save" class="btn btn-primary" />
