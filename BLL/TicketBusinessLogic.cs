@@ -1,9 +1,9 @@
 ﻿using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using SD_340_W22SD_Final_Project_Group6.Data;
 using SD_340_W22SD_Final_Project_Group6.Models;
 using SD_340_W22SD_Final_Project_Group6.Models.ViewModel;
+using System.Security.Claims;
 
 namespace SD_340_W22SD_Final_Project_Group6.BLL
 {
@@ -73,6 +73,28 @@ namespace SD_340_W22SD_Final_Project_Group6.BLL
             return new ItemWithUsersViewModel<Ticket>(ticket, _userProjectRepo.GetAll().Where(u => u.ProjectId == ticket.ProjectId).Select(u => u.ApplicationUser));
         }
 
+        public async Task<ItemWithUsersViewModel<Ticket>> GetTicketForCreationAsync(int? projectId)
+        {
+            if (projectId == null)
+                throw new ArgumentNullException(nameof(projectId));
+
+            Project? project = _projectRepo.Get(projectId) 
+                ?? throw new NullReferenceException("Could not get ticket for creation because project does not exist");
+
+            List<ApplicationUser> assignedUsers = new();
+
+            foreach (UserProject userProject in _userProjectRepo.GetAll().Where(u => u.ProjectId == projectId))
+            {
+                assignedUsers.Add(await _userManager.FindByIdAsync(userProject.ApplicationUserId));
+            }
+
+            return new ItemWithUsersViewModel<Ticket>(new Ticket()
+            {
+                ProjectId = projectId,
+                Project = project,
+            }, assignedUsers);
+        }
+
         public async Task CreateTicketAsync(Ticket ticket)
         {
             ticket.Owner = await _userManager.FindByIdAsync(ticket.OwnerId)
@@ -86,8 +108,11 @@ namespace SD_340_W22SD_Final_Project_Group6.BLL
 
         public async Task<ItemWithUsersViewModel<Ticket>> GetTicketForEditingAsync(int? id)
         {
+            if (id == null)
+                throw new ArgumentNullException(nameof(id));
+
             Ticket? ticket = _ticketRepo.Get(id)
-                ?? throw new NullReferenceException("Could not not get valid ticket for editing");
+                ?? throw new NullReferenceException("Could not get valid ticket for editing");
 
             ticket.Owner = await _userManager.FindByIdAsync(ticket.OwnerId);
 
@@ -121,6 +146,87 @@ namespace SD_340_W22SD_Final_Project_Group6.BLL
 
             if (ticket != null)
                 _ticketRepo.Delete(ticket);
+        }
+
+        public async Task CommentTicketAsync(int? id, string? text, ClaimsPrincipal claimsPrincipal)
+        {
+            if (id == null)
+                throw new ArgumentNullException(nameof(id));
+
+            if (text == null)
+                throw new ArgumentNullException(nameof(text));
+
+            Ticket? ticket = _ticketRepo.Get(id)
+                ?? throw new NullReferenceException("Cannot comment on null ticket");
+
+            ApplicationUser? user = await _userManager.GetUserAsync(claimsPrincipal)
+                ?? throw new NullReferenceException("Null user cannot comment on ticket");
+
+            _commentRepo.Create(new Comment()
+            {
+                TicketId = ticket.Id,
+                CreatedById = user.Id,
+                Description = text,
+            });
+        }
+
+        public void UpdateHours(int? id, int hours)
+        {
+            if (id == null)
+                throw new ArgumentNullException(nameof(id));
+
+            Ticket? ticket = _ticketRepo.Get(id)
+                ?? throw new NullReferenceException("Cannot update hours on null ticket");
+
+            ticket.RequiredHours = hours;
+            _ticketRepo.Update(ticket);
+        }
+
+        public async Task WatchTicketAsync(int? id, ClaimsPrincipal claimsPrincipal)
+        {
+            if (id == null)
+                throw new ArgumentNullException(nameof(id));
+
+            Ticket? ticket = _ticketRepo.Get(id)
+                ?? throw new NullReferenceException("Cannot watch a null ticket");
+
+            ApplicationUser? user = await _userManager.GetUserAsync(claimsPrincipal)
+                ?? throw new NullReferenceException("Null user cannot watch ticket");
+
+            _ticketWatcherRepo.Create(new TicketWatcher()
+            {
+                TicketId = ticket.Id,
+                WatcherId = user.Id
+            });
+        }
+
+        public async Task UnwatchTicketAsync(int? id, ClaimsPrincipal claimsPrincipal)
+        {
+            if (id == null)
+                throw new ArgumentNullException(nameof(id));
+
+            Ticket? ticket = _ticketRepo.Get(id)
+                ?? throw new NullReferenceException("Cannot unwatch a null ticket");
+
+            ApplicationUser? user = await _userManager.GetUserAsync(claimsPrincipal)
+                ?? throw new NullReferenceException("Null user cannot unwatch ticket");
+
+            TicketWatcher? currTickWatch = _ticketWatcherRepo.GetAll().FirstOrDefault(t => t.TicketId == id && t.WatcherId == user.Id);
+
+            if (currTickWatch != null)
+                _ticketWatcherRepo.Delete(currTickWatch);
+        }
+
+        public void UpdateTicketCompleted(int? id, bool isCompleted)
+        {
+            if (id == null)
+                throw new ArgumentNullException(nameof(id));
+
+            Ticket? ticket = _ticketRepo.Get(id)
+                ?? throw new NullReferenceException("Cannot mark null ticket as completed or not");
+
+            ticket.Completed = isCompleted;
+            _ticketRepo.Update(ticket);
         }
 
         public bool TicketExists(int id)

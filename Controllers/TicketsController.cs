@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SD_340_W22SD_Final_Project_Group6.BLL;
-using SD_340_W22SD_Final_Project_Group6.Data;
 using SD_340_W22SD_Final_Project_Group6.Models;
 using SD_340_W22SD_Final_Project_Group6.Models.ViewModel;
 
@@ -11,14 +10,10 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
     [Authorize]
     public class TicketsController : Controller
     {
-        private readonly ApplicationDbContext _context; // to be removed
         private readonly TicketBusinessLogic _ticketBusinessLogic;
 
-        public TicketsController(
-            ApplicationDbContext context,
-            TicketBusinessLogic ticketBusinessLogic)
+        public TicketsController(TicketBusinessLogic ticketBusinessLogic)
         {
-            _context = context;
             _ticketBusinessLogic = ticketBusinessLogic;
         }
 
@@ -43,15 +38,16 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
 
         // GET: Tickets/Create
         [Authorize(Roles = "ProjectManager")]
-        public IActionResult Create(int projId) // will be moved to ProjectBusinessLogic
+        public async Task<IActionResult> Create(int projId)
         {
-            Project currProject = _context.Projects.Include(p => p.AssignedTo).ThenInclude(at => at.ApplicationUser).FirstOrDefault(p => p.Id == projId);
-
-            return View(new ItemWithUsersViewModel<Ticket>(new Ticket()
+            try
             {
-                ProjectId = projId,
-                Project = currProject,
-            }, currProject.AssignedTo.Select(u => u.ApplicationUser)));
+                return View(await _ticketBusinessLogic.GetTicketForCreationAsync(projId));
+            }
+            catch (Exception ex)
+            {
+                return Problem(ex.Message);
+            }
         }
 
         [HttpPost]
@@ -98,7 +94,7 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
                 try
                 {
                     await _ticketBusinessLogic.EditTicketAsync(id, vm.Item);
-                    return RedirectToAction(nameof(Edit), new { id = vm.Item.Id });
+                    return RedirectToAction(nameof(Edit), new { id });
                 }
                 catch (DbUpdateConcurrencyException)
                 {
@@ -127,14 +123,6 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
             {
                 return View(_ticketBusinessLogic.GetTicketForDeletion(id));
             }
-            catch (ArgumentNullException)
-            {
-                return NotFound();
-            }
-            catch (NullReferenceException)
-            {
-                return NotFound();
-            }
             catch (Exception ex)
             {
                 return Problem(ex.Message);
@@ -151,170 +139,73 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
             return RedirectToAction("Index", "Projects");
         }
 
-        [Authorize(Roles = "ProjectManager")]
-        public async Task<IActionResult> RemoveAssignedUser(string id, int ticketId)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CommentTicket(int? id, string? text)
         {
-            if (id == null)
+            try
             {
-                return NotFound();
+                await _ticketBusinessLogic.CommentTicketAsync(id, text, User);
+                return RedirectToAction("Details", new { id });
             }
-            Ticket currTicket = await _context.Tickets.Include(t => t.Owner).FirstAsync(t => t.Id == ticketId);
-            ApplicationUser currUser = await _context.Users.FirstAsync(u => u.Id == id);
-            //To be fixed ASAP
-            currTicket.Owner = currUser;
-            await _context.SaveChangesAsync();
-
-            return RedirectToAction("Edit", new { id = ticketId });
+            catch (Exception ex)
+            {
+                return Problem(ex.Message);
+            }
         }
 
         [HttpPost]
-        public async Task<IActionResult> CommentTask(int TaskId, string? TaskText)
+        [ValidateAntiForgeryToken]
+        public IActionResult UpdateHrs(int? id, int hrs)
         {
-            if (TaskId != null || TaskText != null)
+            try
             {
-                try
-                {
-                    Comment newComment = new Comment();
-                    string userName = User.Identity.Name;
-                    ApplicationUser user = _context.Users.First(u => u.UserName == userName);
-                    Ticket ticket = _context.Tickets.FirstOrDefault(t => t.Id == TaskId);
-
-                    newComment.CreatedBy = user;
-                    newComment.Description = TaskText;
-                    newComment.Ticket = ticket;
-                    user.Comments.Add(newComment);
-                    _context.Comments.Add(newComment);
-                    ticket.Comments.Add(newComment);
-
-                    int Id = TaskId;
-                    await _context.SaveChangesAsync();
-                    return RedirectToAction("Details", new { Id });
-
-                }
-                catch (Exception ex)
-                {
-                    return RedirectToAction("Error", "Home");
-                }
+                _ticketBusinessLogic.UpdateHours(id, hrs);
+                return RedirectToAction("Details", new { id });
             }
-            return RedirectToAction("Index");
+            catch (Exception ex)
+            {
+                return Problem(ex.Message);
+            }
         }
 
-        public async Task<IActionResult> UpdateHrs(int id, int hrs)
+        public async Task<IActionResult> AddToWatchers(int? id)
         {
-            if (id != null || hrs != null)
+            try
             {
-                try
-                {
-                    Ticket ticket = _context.Tickets.FirstOrDefault(t => t.Id == id);
-                    ticket.RequiredHours = hrs;
-                    await _context.SaveChangesAsync();
-                    return RedirectToAction("Details", new { id });
-
-                }
-                catch (Exception ex)
-                {
-                    return RedirectToAction("Error", "Home");
-                }
+                await _ticketBusinessLogic.WatchTicketAsync(id, User);
+                return RedirectToAction("Details", new { id });
             }
-            return RedirectToAction("Index");
+            catch (Exception ex)
+            {
+                return Problem(ex.Message);
+            }
         }
 
-        public async Task<IActionResult> AddToWatchers(int id)
+        public async Task<IActionResult> UnWatch(int? id)
         {
-            if (id != null)
+            try
             {
-                try
-                {
-                    TicketWatcher newTickWatch = new TicketWatcher();
-                    string userName = User.Identity.Name;
-                    ApplicationUser user = _context.Users.First(u => u.UserName == userName);
-                    Ticket ticket = _context.Tickets.FirstOrDefault(t => t.Id == id);
-
-                    newTickWatch.Ticket = ticket;
-                    newTickWatch.Watcher = user;
-                    user.TicketWatching.Add(newTickWatch);
-                    ticket.TicketWatchers.Add(newTickWatch);
-                    _context.Add(newTickWatch);
-
-                    await _context.SaveChangesAsync();
-                    return RedirectToAction("Details", new { id });
-
-                }
-                catch (Exception ex)
-                {
-                    return RedirectToAction("Error", "Home");
-                }
+                await _ticketBusinessLogic.UnwatchTicketAsync(id, User);
+                return RedirectToAction("Details", new { id });
             }
-            return RedirectToAction("Index");
+            catch (Exception ex)
+            {
+                return Problem(ex.Message);
+            }
         }
 
-        public async Task<IActionResult> UnWatch(int id)
+        public IActionResult UpdatedCompleted(int? id, bool isCompleted)
         {
-            if (id != null)
+            try
             {
-                try
-                {
-
-                    string userName = User.Identity.Name;
-                    ApplicationUser user = _context.Users.First(u => u.UserName == userName);
-                    Ticket ticket = _context.Tickets.FirstOrDefault(t => t.Id == id);
-                    TicketWatcher currTickWatch = await _context.TicketWatchers.FirstAsync(tw => tw.Ticket.Equals(ticket) && tw.Watcher.Equals(user));
-                    _context.TicketWatchers.Remove(currTickWatch);
-                    ticket.TicketWatchers.Remove(currTickWatch);
-                    user.TicketWatching.Remove(currTickWatch);
-
-                    await _context.SaveChangesAsync();
-                    return RedirectToAction("Details", new { id });
-
-                }
-                catch (Exception ex)
-                {
-                    return RedirectToAction("Error", "Home");
-                }
+                _ticketBusinessLogic.UpdateTicketCompleted(id, isCompleted);
+                return RedirectToAction("Details", new { id });
             }
-            return RedirectToAction("Index");
-        }
-
-        public async Task<IActionResult> MarkAsCompleted(int id)
-        {
-            if (id != null)
+            catch (Exception ex)
             {
-                try
-                {
-                    Ticket ticket = _context.Tickets.FirstOrDefault(t => t.Id == id);
-                    ticket.Completed = true;
-
-                    await _context.SaveChangesAsync();
-                    return RedirectToAction("Details", new { id });
-
-                }
-                catch (Exception ex)
-                {
-                    return RedirectToAction("Error", "Home");
-                }
+                return Problem(ex.Message);
             }
-            return RedirectToAction("Index");
-        }
-
-        public async Task<IActionResult> UnMarkAsCompleted(int id)
-        {
-            if (id != null)
-            {
-                try
-                {
-                    Ticket ticket = _context.Tickets.FirstOrDefault(t => t.Id == id);
-                    ticket.Completed = false;
-
-                    await _context.SaveChangesAsync();
-                    return RedirectToAction("Details", new { id });
-
-                }
-                catch (Exception ex)
-                {
-                    return RedirectToAction("Error", "Home");
-                }
-            }
-            return RedirectToAction("Index");
         }
     }
 }
