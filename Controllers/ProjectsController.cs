@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using SD_340_W22SD_Final_Project_Group6.BLL;
 using SD_340_W22SD_Final_Project_Group6.Data;
 using SD_340_W22SD_Final_Project_Group6.Models;
 using X.PagedList;
@@ -20,9 +21,12 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _users;
+        private readonly ProjectsBusinessLogic _projectBusinessLogic;
 
-        public ProjectsController(ApplicationDbContext context, UserManager<ApplicationUser> users)
+
+        public ProjectsController(ApplicationDbContext context, UserManager<ApplicationUser> users, ProjectsBusinessLogic projectsBusinessLogic)
         {
+            _projectBusinessLogic = projectsBusinessLogic;
             _context = context;
             _users = users;
         }
@@ -150,34 +154,28 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
         }
 
         // GET: Projects/Details/5
-        public async Task<IActionResult> Details(int? id)
+        public async Task<IActionResult> Details(int id)
         {
-            if (id == null || _context.Projects == null)
-            {
-                return NotFound();
+            
+            try {
+                return View(_projectBusinessLogic.GetDetailsById(id)); 
+            } 
+            catch (Exception ex){
+                return Problem(ex.Message);
             }
-
-            var project = await _context.Projects
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (project == null)
-            {
-                return NotFound();
-            }
-
-            return View(project);
         }
 
         public async Task<IActionResult> RemoveAssignedUser(string id, int projId)
         {
-            if (id == null)
+            try
             {
-                return NotFound();
+                await _projectBusinessLogic.RemoveUserFromProject(id, projId);
+                return RedirectToAction("Edit", new { id = projId });
             }
-            UserProject currUserProj = await _context.UserProjects.FirstAsync(up => up.ProjectId == projId && up.ApplicationUserId == id);
-            _context.UserProjects.Remove(currUserProj);
-            await _context.SaveChangesAsync();
-
-            return RedirectToAction("Edit", new { id = projId });
+            catch (Exception ex)
+            {
+                return Problem(ex.Message);
+            }
         }
 
         // GET: Projects/Create
