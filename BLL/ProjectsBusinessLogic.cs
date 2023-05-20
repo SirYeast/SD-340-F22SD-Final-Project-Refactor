@@ -6,6 +6,11 @@ using SD_340_W22SD_Final_Project_Group6.Models.ViewModel;
 using SelectListItem = Microsoft.AspNetCore.Mvc.Rendering.SelectListItem;
 using NuGet.Versioning;
 using Microsoft.Build.Construction;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
+using X.PagedList;
+using System.Linq;
 
 namespace SD_340_W22SD_Final_Project_Group6.BLL
 {
@@ -14,26 +19,41 @@ namespace SD_340_W22SD_Final_Project_Group6.BLL
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IRepository<Ticket> _ticketRepo;
         private readonly IRepository<Project> _projectRepo;
-        private readonly IRepository<Comment> _commentRepo;
         private readonly IRepository<UserProject> _userProjectRepo;
-        private readonly IRepository<TicketWatcher> _ticketWatcherRepo;
 
         public ProjectsBusinessLogic(
             UserManager<ApplicationUser> userManager,
             IRepository<Ticket> ticketRepo,
             IRepository<Project> projectRepo,
-            IRepository<Comment> commentRepo,
-            IRepository<UserProject> userProjectRepo,
-            IRepository<TicketWatcher> ticketWatcherRepo)
+            IRepository<UserProject> userProjectRepo)
         {
+            _ticketRepo= ticketRepo;
             _userManager = userManager;
-            _ticketRepo = ticketRepo;
             _projectRepo = projectRepo;
-            _commentRepo = commentRepo;
             _userProjectRepo = userProjectRepo;
-            _ticketWatcherRepo = ticketWatcherRepo;
         }
 
+        //Index
+
+        public async Task<List<SelectListItem>> GetAllDevelopersAsync()
+        {
+            List<ApplicationUser> allUsers = (List<ApplicationUser>)await _userManager.GetUsersInRoleAsync("Developer");
+
+            List<SelectListItem> users = new List<SelectListItem>();
+
+            allUsers.ForEach(au =>
+            {
+                users.Add(new SelectListItem(au.UserName, au.Id.ToString()));
+            });
+
+            return users;
+        }
+
+        public async Task<IPagedList<Project>> GetSortedProjects(string? sortOrder, int? page, bool? sort, string? userId, ClaimsPrincipal claimsPrincipal)
+        {
+            throw new NotImplementedException("Not Implemented");
+        }
+        //
         //Details
         public Project GetDetailsById(int id)
         {
@@ -71,19 +91,6 @@ namespace SD_340_W22SD_Final_Project_Group6.BLL
         }
 
         //Create Project
-        public async Task<List<SelectListItem>> GetUsersForCreateAsync()
-        {
-            List<ApplicationUser> allUsers = (List<ApplicationUser>)await _userManager.GetUsersInRoleAsync("Developer");
-
-            List<SelectListItem> users = new List<SelectListItem>();
-
-            allUsers.ForEach(au =>
-            {
-                users.Add(new SelectListItem(au.UserName, au.Id.ToString()));
-            });
-
-            return users;
-        }
 
         //FIX SAVE ERROR
         public async Task CreateProjectAsync(List<string> userIds, Project project, ClaimsPrincipal claimsPrincipal)
@@ -116,6 +123,9 @@ namespace SD_340_W22SD_Final_Project_Group6.BLL
             }
 
             Project project = _projectRepo.Get(id);
+
+            project.AssignedTo = _userProjectRepo.GetAll().Where(u=> u.ProjectId == project.Id).ToList();
+
             if (project == null)
             {
                 throw new ArgumentException("Project Not Found");
@@ -153,6 +163,7 @@ namespace SD_340_W22SD_Final_Project_Group6.BLL
             }
 
             Project project = _projectRepo.Get(id);
+            project.Tickets = _ticketRepo.GetAll().Where(t => t.ProjectId == id).ToList();
             if (project == null)
             {
                 throw new ArgumentException("Project does not exist");
@@ -167,7 +178,10 @@ namespace SD_340_W22SD_Final_Project_Group6.BLL
             {
                 throw new ArgumentNullException("Entity set 'ApplicationDbContext.Projects' is null.");
             }
+
             Project project = _projectRepo.Get(id);
+            project.Tickets = _ticketRepo.GetAll().Where(t => t.ProjectId == id).ToList();
+
 
             if (project != null)
             {
@@ -183,9 +197,8 @@ namespace SD_340_W22SD_Final_Project_Group6.BLL
                 {
                     _userProjectRepo.Delete(userProj);
                 });
-
-                _projectRepo.Delete(project);
             }
+            _projectRepo.Delete(project);
         }
 
         public bool ProjectExists(int id)

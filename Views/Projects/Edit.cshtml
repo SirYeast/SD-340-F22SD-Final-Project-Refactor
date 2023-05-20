@@ -28,10 +28,11 @@
         </tr>
     </thead>
     <tbody>
-@foreach (var item in Model.Item.AssignedTo) {
+
+@foreach (UserProject item in Model.Item.AssignedTo) {
         <tr>
             <td>
-                @Html.DisplayFor(modelItem => item.ApplicationUser.UserName)
+                @item.ApplicationUser.UserName;
             </td>
             <td>
                 <a asp-action="RemoveAssignedUser" asp-controller="Projects" asp-route-id="@item.ApplicationUser.Id" asp-route-projId="@Model.Item.Id">Remove</a>

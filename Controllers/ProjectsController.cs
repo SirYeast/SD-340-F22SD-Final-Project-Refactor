@@ -186,7 +186,7 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
         {
             try
             {
-                ViewBag.Users = await _projectBusinessLogic.GetUsersForCreateAsync();
+                ViewBag.Users = await _projectBusinessLogic.GetAllDevelopersAsync();
                 return View();
             }
             catch(Exception ex)
