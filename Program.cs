@@ -26,6 +26,7 @@ builder.Services.AddScoped<IRepository<TicketWatcher>, TicketWatcherRepository>(
 
 builder.Services.AddScoped<AdminBusinessLogic>();
 builder.Services.AddScoped<TicketBusinessLogic>();
+builder.Services.AddScoped<ProjectsBusinessLogic>();
 
 var app = builder.Build();
 
