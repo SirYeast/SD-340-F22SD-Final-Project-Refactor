@@ -19,7 +19,7 @@ namespace SD_340_W22SD_Final_Project_Group6.Data
 
         public Ticket? Get(int? Id)
         {
-            return _context.Tickets.Find(Id);
+            return _context.Tickets.FirstOrDefault(t => t.Id == Id);
         }
 
         public ICollection<Ticket> GetAll()

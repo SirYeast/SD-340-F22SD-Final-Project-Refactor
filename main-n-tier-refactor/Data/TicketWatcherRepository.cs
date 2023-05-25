@@ -19,7 +19,7 @@ namespace SD_340_W22SD_Final_Project_Group6.Data
 
         public TicketWatcher? Get(int? Id)
         {
-            return _context.TicketWatchers.Find(Id);
+            return _context.TicketWatchers.FirstOrDefault(t => t.Id == Id);
         }
 
         public ICollection<TicketWatcher> GetAll()

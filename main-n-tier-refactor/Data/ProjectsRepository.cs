@@ -34,7 +34,7 @@ namespace SD_340_W22SD_Final_Project_Group6.Data
 
         public Project? Get(int? Id)
         {
-            return _context.Projects.Find(Id);
+            return _context.Projects.FirstOrDefault(p => p.Id == Id);
         }
 
         public ICollection<Project> GetAll()
