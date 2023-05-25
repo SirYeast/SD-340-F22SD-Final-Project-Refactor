@@ -19,7 +19,7 @@ namespace SD_340_W22SD_Final_Project_Group6.Data
 
         public Comment? Get(int? Id)
         {
-            return _context.Comments.Find(Id);
+            return _context.Comments.FirstOrDefault(c => c.Id == Id);
         }
 
         public ICollection<Comment> GetAll()
