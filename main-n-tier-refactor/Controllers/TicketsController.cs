@@ -28,7 +28,7 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
         {
             try
             {
-                return View(await _ticketBusinessLogic.GetTicketDetails(id));
+                return View(await _ticketBusinessLogic.GetTicketDetailsAsync(id));
             }
             catch (Exception ex)
             {
@@ -93,7 +93,7 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
             {
                 try
                 {
-                    await _ticketBusinessLogic.EditTicketAsync(id, vm.Item);
+                    _ticketBusinessLogic.EditTicket(id, vm.Item);
                     return RedirectToAction(nameof(Edit), new { id });
                 }
                 catch (DbUpdateConcurrencyException)
