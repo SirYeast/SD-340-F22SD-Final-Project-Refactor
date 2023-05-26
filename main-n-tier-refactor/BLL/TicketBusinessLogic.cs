@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 using SD_340_W22SD_Final_Project_Group6.Data;
 using SD_340_W22SD_Final_Project_Group6.Models;
 using SD_340_W22SD_Final_Project_Group6.Models.ViewModel;
+using System.Net.Sockets;
 using System.Security.Claims;
 
 namespace SD_340_W22SD_Final_Project_Group6.BLL
@@ -32,6 +32,18 @@ namespace SD_340_W22SD_Final_Project_Group6.BLL
             _ticketWatcherRepo = ticketWatcherRepo;
         }
 
+        private async Task<IEnumerable<ApplicationUser>> GetProjectAssignedUsers(int projectId)
+        {
+            List<ApplicationUser> assignedUsers = new();
+
+            foreach (UserProject userProject in _userProjectRepo.GetAll().Where(u => u.ProjectId == projectId))
+            {
+                assignedUsers.Add(await _userManager.FindByIdAsync(userProject.ApplicationUserId));
+            }
+
+            return assignedUsers;
+        }
+
         public async Task<IEnumerable<Ticket>> GetAllTicketsAsync()
         {
             ICollection<Ticket> tickets = _ticketRepo.GetAll();
@@ -45,7 +57,7 @@ namespace SD_340_W22SD_Final_Project_Group6.BLL
             return tickets;
         }
 
-        public async Task<ItemWithUsersViewModel<Ticket>> GetTicketDetails(int? id)
+        public async Task<ItemWithUsersViewModel<Ticket>> GetTicketDetailsAsync(int? id)
         {
             if (id == null)
                 throw new ArgumentNullException(nameof(id));
@@ -70,7 +82,8 @@ namespace SD_340_W22SD_Final_Project_Group6.BLL
                 comment.CreatedBy = await _userManager.FindByIdAsync(comment.CreatedById);
             }
 
-            return new ItemWithUsersViewModel<Ticket>(ticket, _userProjectRepo.GetAll().Where(u => u.ProjectId == ticket.ProjectId).Select(u => u.ApplicationUser));
+            return new ItemWithUsersViewModel<Ticket>(ticket, await GetProjectAssignedUsers(ticket.ProjectId
+                ?? throw new NullReferenceException("Cannot get assigned users of null project")));
         }
 
         public async Task<ItemWithUsersViewModel<Ticket>> GetTicketForCreationAsync(int? projectId)
@@ -81,18 +94,11 @@ namespace SD_340_W22SD_Final_Project_Group6.BLL
             Project? project = _projectRepo.Get(projectId) 
                 ?? throw new NullReferenceException("Could not get ticket for creation because project does not exist");
 
-            List<ApplicationUser> assignedUsers = new();
-
-            foreach (UserProject userProject in _userProjectRepo.GetAll().Where(u => u.ProjectId == projectId))
-            {
-                assignedUsers.Add(await _userManager.FindByIdAsync(userProject.ApplicationUserId));
-            }
-
             return new ItemWithUsersViewModel<Ticket>(new Ticket()
             {
                 ProjectId = projectId,
                 Project = project,
-            }, assignedUsers);
+            }, await GetProjectAssignedUsers(project.Id));
         }
 
         public async Task CreateTicketAsync(Ticket ticket)
@@ -116,16 +122,16 @@ namespace SD_340_W22SD_Final_Project_Group6.BLL
 
             ticket.Owner = await _userManager.FindByIdAsync(ticket.OwnerId);
 
-            return new ItemWithUsersViewModel<Ticket>(ticket,
-                _userProjectRepo.GetAll().Where(u => u.ProjectId == ticket.ProjectId).Select(u => u.ApplicationUser));
+            return new ItemWithUsersViewModel<Ticket>(ticket, await GetProjectAssignedUsers(ticket.ProjectId
+                ?? throw new NullReferenceException("Cannot get assigned users of null project")));
         }
 
-        public async Task EditTicketAsync(int id, Ticket ticket)
+        public void EditTicket(int id, Ticket ticket)
         {
             if (id != ticket.Id)
                 throw new ArgumentException("Ticket ids do not match");
 
-            if (!await _userManager.Users.AnyAsync(u => u.Id == ticket.OwnerId))
+            if (!_userManager.Users.Any(u => u.Id == ticket.OwnerId))
                 throw new ArgumentException("Ticket is owned by user that does not exist");
 
             _ticketRepo.Update(ticket);
