@@ -21,6 +21,10 @@ namespace SD_340_W22SD_Final_Project_Group6.BLL
         private readonly IRepository<Project> _projectRepo;
         private readonly IRepository<UserProject> _userProjectRepo;
 
+        public UserManager<ApplicationUser> Object { get; }
+        public ProjectsRepository ProjectsRepository { get; }
+        public UserProjectRepository UserProjectRepository { get; }
+
         public ProjectsBusinessLogic(
             UserManager<ApplicationUser> userManager,
             IRepository<Ticket> ticketRepo,
@@ -33,18 +37,25 @@ namespace SD_340_W22SD_Final_Project_Group6.BLL
             _userProjectRepo = userProjectRepo;
         }
 
+        public ProjectsBusinessLogic(UserManager<ApplicationUser> @object, ProjectsRepository projectsRepository, UserProjectRepository userProjectRepository)
+        {
+            Object = @object;
+            ProjectsRepository = projectsRepository;
+            UserProjectRepository = userProjectRepository;
+        }
+
         //Index
 
-        public async Task<List<SelectListItem>> GetAllDevelopersAsync()
+        public async Task<IEnumerable<SelectListItem>> GetAllDevelopersAsync()
         {
-            List<ApplicationUser> allUsers = (List<ApplicationUser>)await _userManager.GetUsersInRoleAsync("Developer");
+            ICollection<ApplicationUser> allUsers = await _userManager.GetUsersInRoleAsync("Developer");
 
             List<SelectListItem> users = new List<SelectListItem>();
 
-            allUsers.ForEach(au =>
+            foreach(ApplicationUser au in allUsers)
             {
                 users.Add(new SelectListItem(au.UserName, au.Id.ToString()));
-            });
+            };
 
             return users;
         }
